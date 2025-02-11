@@ -1,15 +1,24 @@
 #!/bin/bash
 
-# Install NVM and Node.js 18
+# Define where NVM should be installed
+export NVM_DIR="$HOME/.nvm"
+
+# Install NVM
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
-source ~/.bashrc
+
+# Load NVM in this script
+# (so that 'nvm' becomes available immediately)
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# Install and use Node.js 18 via NVM
 nvm install 18
 nvm use 18
 
 # Install n8n
 npm install -g n8n
 
-# Generate credentials.json from environment variables
+# Generate credentials.json
 cat <<EOF > credentials.json
 [{
   "name": "OpenAi account",
