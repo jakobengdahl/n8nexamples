@@ -1,0 +1,2 @@
+# Avoid checking in credentials.json
+credentials.json

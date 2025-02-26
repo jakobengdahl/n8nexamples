@@ -1,6 +1,23 @@
 #!/bin/bash
-
 {
+
+  set -e
+
+  # If CODESPACE_NAME is set, configure WEBHOOK_URL accordingly
+  if [ -n "$CODESPACE_NAME" ]; then
+      export WEBHOOK_URL="https://${CODESPACE_NAME}-5678.app.github.dev/"
+      echo "WEBHOOK_URL set to $WEBHOOK_URL"
+  fi
+
+  # For browser-use
+  pip install browser-use
+  pip install python-dotenv
+  pip install langchain_openai
+  pip install playwright
+  playwright install-deps
+  playwright install
+
+
   # Define where NVM should be installed
   export NVM_DIR="$HOME/.nvm"
 
@@ -18,38 +35,41 @@
   # Install n8n
   npm install -g n8n
 
+
   # Generate credentials.json
   cat <<EOF > credentials.json
-[{
-  "name": "OpenAi account",
-  "type": "openAiApi",
-  "data": {
-    "apiKey": "$OPENAI_API_KEY"
-  }
-},
-{
-  "name": "SerpAPI account",
-  "type": "serpApi",
-  "data": {
-    "apiKey": "$SERP_API_KEY"
-  }
-},
-{
-  "name": "Discord Webhook account",
-  "type": "discordWebhookApi",
-  "data": {
-    "webhookUri": "$DISCORD_WEBHOOK_URI"
-  }
-}]
-EOF
+  [{
+    "id": "$(uuidgen)",
+    "name": "OpenAi account",
+    "type": "openAiApi",
+    "data": {
+      "apiKey": "$OPENAI_API_KEY"
+    }
+  },
+  {
+    "id": "$(uuidgen)",
+    "name": "SerpAPI account",
+    "type": "serpApi",
+    "data": {
+      "apiKey": "$SERP_API_KEY"
+    }
+  },
+  {
+    "id": "$(uuidgen)",
+    "name": "Discord Webhook account",
+    "type": "discordWebhookApi",
+    "data": {
+      "webhookUri": "$DISCORD_WEBHOOK_URI"
+    }
+  }]
+  EOF
+
 
   # Import credentials into n8n
-  # (Ta bort --overwrite=true om din n8n-version inte stödjer det.)
-  n8n import:credentials --input=credentials.json --overwrite=true
+  n8n import:credentials --input=credentials.json 
 
-  # Start n8n i bakgrunden
+  # Start n8n in background
   nohup n8n start > n8n.log 2>&1 &
 } > /tmp/n8n-install.log 2>&1 &
 
-# Scriptet avslutas omedelbart så VS Code blir tillgängligt.
 exit 0
