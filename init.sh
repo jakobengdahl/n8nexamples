@@ -38,7 +38,7 @@
 
   # Generate credentials.json
   cat <<EOF > credentials.json
-  [{
+[{
     "id": "$(uuidgen)",
     "name": "OpenAi account",
     "type": "openAiApi",
@@ -62,7 +62,8 @@
       "webhookUri": "$DISCORD_WEBHOOK_URI"
     }
   }]
-  EOF
+EOF
+
 
 
   # Import credentials into n8n
