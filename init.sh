@@ -1,6 +1,9 @@
 #!/bin/bash
 {
 
+  export N8N_COMMUNITY_NODES_ENABLED=true
+  export N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+
   set -e
 
   # If CODESPACE_NAME is set, configure WEBHOOK_URL accordingly
@@ -68,6 +71,8 @@ EOF
 
   # Import credentials into n8n
   n8n import:credentials --input=credentials.json 
+  
+  npm i n8n-nodes-mcp
 
   # Start n8n in background
   nohup n8n start > n8n.log 2>&1 &
