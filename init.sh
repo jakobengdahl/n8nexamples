@@ -1,46 +1,48 @@
 #!/bin/bash
-{
 
-  export N8N_COMMUNITY_NODES_ENABLED=true
-  export N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+set -e
 
-  set -e
+echo "[init] Enabling n8n community nodes"
+export N8N_COMMUNITY_NODES_ENABLED=true
+export N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
 
-  # If CODESPACE_NAME is set, configure WEBHOOK_URL accordingly
-  if [ -n "$CODESPACE_NAME" ]; then
-      export WEBHOOK_URL="https://${CODESPACE_NAME}-5678.app.github.dev/"
-      echo "WEBHOOK_URL set to $WEBHOOK_URL"
-  fi
+# Fix uuidgen if missing
+if ! command -v uuidgen >/dev/null 2>&1; then
+  echo "[init] Installing uuidgen"
+  sudo apt-get update && sudo apt-get install -y uuid-runtime
+fi
 
-  # For browser-use
-  pip install browser-use
-  pip install python-dotenv
-  pip install langchain_openai
-  pip install playwright
-  playwright install-deps
-  playwright install
+# Set webhook if in Codespace
+if [ -n "$CODESPACE_NAME" ]; then
+    export WEBHOOK_URL="https://${CODESPACE_NAME}-5678.app.github.dev/"
+    echo "[init] WEBHOOK_URL set to $WEBHOOK_URL"
+fi
 
+# Install Python packages
+echo "[init] Installing Python dependencies"
+pip install browser-use python-dotenv langchain_openai playwright
+playwright install-deps
+playwright install
 
-  # Define where NVM should be installed
-  export NVM_DIR="$HOME/.nvm"
+# Install Node.js 18 via NVM
+echo "[init] Installing Node.js via NVM"
+export NVM_DIR="$HOME/.nvm"
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+source "$NVM_DIR/nvm.sh"
+nvm install 18
+nvm use 18
 
-  # Install NVM
-  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+# Install n8n
+echo "[init] Installing n8n"
+npm install -g n8n
 
-  # Load NVM in this script
-  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
+# Optional community node
+echo "[init] Installing community node n8n-nodes-mcp"
+npm install -g n8n-nodes-mcp
 
-  # Install and use Node.js 18 via NVM
-  nvm install 18
-  nvm use 18
-
-  # Install n8n
-  npm install -g n8n
-
-
-  # Generate credentials.json
-  cat <<EOF > credentials.json
+# Generate credentials.json
+echo "[init] Creating credentials.json"
+cat <<EOF > credentials.json
 [{
     "id": "$(uuidgen)",
     "name": "OpenAi account",
@@ -67,15 +69,14 @@
   }]
 EOF
 
+# Import credentials
+echo "[init] Importing credentials into n8n"
+n8n import:credentials --input=credentials.json 
 
+# Start n8n in background
+echo "[init] Starting n8n in background"
+nohup n8n start > n8n.log 2>&1 &
 
-  # Import credentials into n8n
-  n8n import:credentials --input=credentials.json 
-  
-  npm i n8n-nodes-mcp
-
-  # Start n8n in background
-  nohup n8n start > n8n.log 2>&1 &
-} > /tmp/n8n-install.log 2>&1 &
-
-exit 0
+sleep 2
+echo "[init] n8n started"
+tail -f n8n.log
